@@ -1,0 +1,47 @@
+{
+  "name": "vscode-debug-params",
+  "displayName": "Debug Params",
+  "description": "Manage debug parameters with .debug-params.json for flexible environment and argument configuration",
+  "author": "Tetsuo Honda",
+  "publisher": "TetsuoHonda",
+  "version": "0.1.3",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hondarer/vscode-debug-params.git"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onDebug"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "debuggers": [
+      {
+        "type": "*"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/vsce": "^3.7.1",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}
