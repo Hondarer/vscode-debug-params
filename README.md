@@ -1,8 +1,12 @@
 # vscode-debug-params
 
+NOTE: The explanation in Japanese appears later in this document.
+
+## vscode-debug-params (in English)
+
 A VS Code extension for flexible management of environment variables and arguments during debug sessions.
 
-## Features
+### Features
 
 - **Configuration Separation**: Keep launch.json simple by separating project-specific settings into `.debug-params.json`
 - **Multiple Configuration Sets**: Easily switch between development, test, and production simulation environments
@@ -10,9 +14,9 @@ A VS Code extension for flexible management of environment variables and argumen
 - **Dynamic Input**: Specify parameters via file picker or text input at debug time
 - **Variable Expansion**: Support for `${workspaceFolder}`, `${fileDirname}`, `${env:VAR}`, etc.
 
-## Usage
+### Usage
 
-### 1. Add `useDebugParams: true` to launch.json
+#### 1. Add `useDebugParams: true` to launch.json
 
 ```json
 {
@@ -30,7 +34,7 @@ A VS Code extension for flexible management of environment variables and argumen
 }
 ```
 
-### 2. Create `.debug-params.json` in your project folder
+#### 2. Create `.debug-params.json` in your project folder
 
 ```json
 {
@@ -55,13 +59,13 @@ A VS Code extension for flexible management of environment variables and argumen
 }
 ```
 
-### 3. Press F5 to debug
+#### 3. Press F5 to debug
 
 When multiple configurations exist, you can select from a quick pick menu.
 
-## Configuration Options
+### Configuration Options
 
-### .debug-params.json
+#### .debug-params.json
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -72,7 +76,7 @@ When multiple configurations exist, you can select from a quick pick menu.
 | `args` | Arguments array or string | |
 | `inputs` | Dynamic input definitions | |
 
-### Common Debug Types
+#### Common Debug Types
 
 - `cppdbg` - C/C++ (GDB/LLDB) - Linux, macOS
 - `cppvsdbg` - C/C++ (Visual Studio debugger) - Windows
@@ -80,17 +84,17 @@ When multiple configurations exist, you can select from a quick pick menu.
 - `coreclr` - .NET
 - `node` - Node.js
 
-## Parameter Merge Rules
+### Parameter Merge Rules
 
-### Environment Variables
+#### Environment Variables
 
 Environment variables from `.debug-params.json` are merged into launch.json's environment variables. Duplicate keys are overwritten.
 
-### Arguments
+#### Arguments
 
 When `args` key exists in `.debug-params.json`, it **replaces** launch.json's arguments. If `args` key is absent, launch.json's arguments are preserved. Use empty array `[]` to clear arguments.
 
-## Platform-Specific Settings
+### Platform-Specific Settings
 
 ```json
 {
@@ -113,11 +117,11 @@ When `args` key exists in `.debug-params.json`, it **replaces** launch.json's ar
 }
 ```
 
-## Dynamic Input
+### Dynamic Input
 
 Accept user input at debug time.
 
-### Built-in Input
+#### Built-in Input
 
 ```json
 {
@@ -133,7 +137,7 @@ Accept user input at debug time.
 }
 ```
 
-#### Available Built-in Inputs
+##### Available Built-in Inputs
 
 - `${input:@file}` - File selection
 - `${input:@folder}` - Folder selection
@@ -143,7 +147,7 @@ Accept user input at debug time.
 
 Format: `${input:@type:description:default}`
 
-### Custom Input
+#### Custom Input
 
 ```json
 {
@@ -165,14 +169,14 @@ Format: `${input:@type:description:default}`
 }
 ```
 
-#### Input Types
+##### Input Types
 
 - `promptString` - Text input
 - `pickString` - Select from options
 - `pickFile` - File selection dialog
 - `pickFolder` - Folder selection dialog
 
-#### Input Options
+##### Input Options
 
 | Field | Description |
 |-------|-------------|
@@ -183,15 +187,15 @@ Format: `${input:@type:description:default}`
 | `options` | Options array (for `pickString`) |
 | `password` | Password mode (for `promptString`) |
 
-#### Input Value Caching
+##### Input Value Caching
 
 When running the same configuration consecutively, previous input values are automatically used as defaults.
 
-#### Input Cancellation
+##### Input Cancellation
 
 If the user cancels an input, the debug session is aborted.
 
-## Supported Variables
+### Supported Variables
 
 - `${workspaceFolder}` - Workspace root path
 - `${workspaceRoot}` - Same as `${workspaceFolder}` (for compatibility)
@@ -204,9 +208,9 @@ If the user cancels an input, the debug session is aborted.
 - `${env:VAR}` - Environment variable value
 - `${config:KEY}` - VS Code configuration value
 
-## Examples
+### Examples
 
-### Python Project
+#### Python Project
 
 ```json
 {
@@ -227,7 +231,7 @@ If the user cancels an input, the debug session is aborted.
 }
 ```
 
-### C/C++ Project
+#### C/C++ Project
 
 ```json
 {
@@ -247,7 +251,7 @@ If the user cancels an input, the debug session is aborted.
 }
 ```
 
-### .NET Project
+#### .NET Project
 
 ```json
 {
@@ -263,13 +267,13 @@ If the user cancels an input, the debug session is aborted.
 }
 ```
 
-## Build Error Handling
+### Build Error Handling
 
 When `preLaunchTask` fails (e.g., build error) and the `program` file doesn't exist, the extension cancels the debug session and displays a warning message.
 
 This prevents unnecessary configuration selection dialogs when build errors occur.
 
-## Troubleshooting
+### Troubleshooting
 
 To verify settings are applied correctly, check the output panel for logs.
 
@@ -279,21 +283,21 @@ To verify settings are applied correctly, check the output panel for logs.
 
 You can verify variable expansion results and whether environment variables and arguments are set as expected.
 
-## Compatibility
+### Compatibility
 
 This extension works safely even when not installed. The `useDebugParams` flag is ignored, and launch.json settings are used as-is.
 
-## License
+### License
 
 MIT
 
 ---
 
-# 日本語ドキュメント
+## vscode-debug-params (in Japanese)
 
 VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する拡張機能です。
 
-## 特徴
+### 特徴
 
 - **設定の分離**: launch.json をシンプルに保ち、プロジェクト固有の設定を `.debug-params.json` に分離
 - **複数の設定セット**: 開発環境、テスト環境、本番環境シミュレーションなど、複数の設定を簡単に切り替え
@@ -301,9 +305,9 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 - **動的入力**: デバッグ実行時にファイル選択やテキスト入力でパラメータを指定
 - **変数展開**: `${workspaceFolder}`, `${fileDirname}`, `${env:VAR}` などの変数をサポート
 
-## 使い方
+### 使い方
 
-### 1. launch.json に `useDebugParams: true` を追加
+#### 1. launch.json に `useDebugParams: true` を追加
 
 ```json
 {
@@ -321,7 +325,7 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 }
 ```
 
-### 2. プロジェクトフォルダに `.debug-params.json` を作成
+#### 2. プロジェクトフォルダに `.debug-params.json` を作成
 
 ```json
 {
@@ -346,13 +350,13 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 }
 ```
 
-### 3. F5 でデバッグ実行
+#### 3. F5 でデバッグ実行
 
 複数の設定がある場合、クイックピックで選択できます。
 
-## 設定項目
+### 設定項目
 
-### .debug-params.json
+#### .debug-params.json
 
 | 項目 | 説明 | 必須 |
 |------|------|------|
@@ -363,7 +367,7 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 | `args` | 引数の配列または文字列 | |
 | `inputs` | 動的入力の定義 | |
 
-### 主なデバッグタイプ
+#### 主なデバッグタイプ
 
 - `cppdbg` - C/C++ (GDB/LLDB) - Linux, macOS
 - `cppvsdbg` - C/C++ (Visual Studio debugger) - Windows
@@ -371,17 +375,17 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 - `coreclr` - .NET
 - `node` - Node.js
 
-## パラメータのマージルール
+### パラメータのマージルール
 
-### 環境変数
+#### 環境変数
 
 launch.json の環境変数に、`.debug-params.json` の環境変数をマージします。同じキーがある場合は上書きします。
 
-### 引数
+#### 引数
 
 `.debug-params.json` に `args` キーがある場合、launch.json の引数を**置換**します。`args` キーがない場合は、launch.json の引数を維持します。空配列 `[]` を指定すると引数を空にできます。
 
-## プラットフォーム別設定
+### プラットフォーム別設定
 
 ```json
 {
@@ -404,11 +408,11 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-## 動的入力
+### 動的入力
 
 デバッグ実行時にユーザー入力を受け付けることができます。
 
-### 組み込み input
+#### 組み込み input
 
 ```json
 {
@@ -424,7 +428,7 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-#### 利用可能な組み込み input
+##### 利用可能な組み込み input
 
 - `${input:@file}` - ファイル選択
 - `${input:@folder}` - フォルダ選択
@@ -434,7 +438,7 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 
 形式: `${input:@type:説明:デフォルト値}`
 
-### カスタム input
+#### カスタム input
 
 ```json
 {
@@ -456,14 +460,14 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-#### input タイプ
+##### input タイプ
 
 - `promptString` - テキスト入力
 - `pickString` - 選択肢から選択
 - `pickFile` - ファイル選択ダイアログ
 - `pickFolder` - フォルダ選択ダイアログ
 
-#### input のオプション
+##### input のオプション
 
 | 項目 | 説明 |
 |------|------|
@@ -474,15 +478,15 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 | `options` | 選択肢の配列 (`pickString` の場合に使用) |
 | `password` | パスワード入力モード (`promptString` の場合に使用) |
 
-#### 入力値のキャッシュ
+##### 入力値のキャッシュ
 
 同じ設定を連続して実行する場合、前回の入力値が自動的にデフォルト値として使用されます。
 
-#### 入力のキャンセル
+##### 入力のキャンセル
 
 ユーザーが入力をキャンセルした場合、デバッグ実行は中止されます。
 
-## サポートする変数
+### サポートする変数
 
 - `${workspaceFolder}` - ワークスペースのルートパス
 - `${workspaceRoot}` - `${workspaceFolder}` と同じ (互換性のため)
@@ -495,9 +499,9 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 - `${env:VAR}` - 環境変数の値
 - `${config:KEY}` - VS Code の設定値
 
-## サンプル
+### サンプル
 
-### Python プロジェクト
+#### Python プロジェクト
 
 ```json
 {
@@ -518,7 +522,7 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-### C/C++ プロジェクト
+#### C/C++ プロジェクト
 
 ```json
 {
@@ -538,7 +542,7 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-### .NET プロジェクト
+#### .NET プロジェクト
 
 ```json
 {
@@ -554,13 +558,13 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 }
 ```
 
-## ビルドエラー時の動作
+### ビルドエラー時の動作
 
 `preLaunchTask` でビルドが失敗した場合など、`program` に指定されたファイルが存在しないとき、拡張機能はデバッグセッションをキャンセルし、警告メッセージを表示します。
 
 これにより、ビルドエラー時に不要な設定選択ダイアログが表示されることを防ぎます。
 
-## トラブルシューティング
+### トラブルシューティング
 
 設定が正しく適用されているか確認したい場合は、出力パネルでログを確認できます。
 
@@ -570,10 +574,10 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 
 変数の展開結果や、環境変数・引数が期待通りに設定されているかを確認できます。
 
-## 互換性
+### 互換性
 
 この拡張機能がインストールされていない環境でも、launch.json は正常に動作します。`useDebugParams` フラグは無視され、launch.json の設定がそのまま使用されます。
 
-## ライセンス
+### ライセンス
 
 MIT
