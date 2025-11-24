@@ -7,9 +7,11 @@ import { DebugParamsConfig, DebugParamEntry, InputDefinition, InputCache } from 
 export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
   private inputCache: InputCache = {};
   private context: vscode.ExtensionContext;
+  private outputChannel: vscode.LogOutputChannel;
 
-  constructor(context: vscode.ExtensionContext) {
+  constructor(context: vscode.ExtensionContext, outputChannel: vscode.LogOutputChannel) {
     this.context = context;
+    this.outputChannel = outputChannel;
   }
 
   async resolveDebugConfigurationWithSubstitutedVariables(
@@ -17,12 +19,16 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     config: vscode.DebugConfiguration,
     token?: vscode.CancellationToken
   ): Promise<vscode.DebugConfiguration | undefined> {
+    this.outputChannel.info('resolveDebugConfigurationWithSubstitutedVariables called');
+
     if (!config.useDebugParams) {
+      this.outputChannel.info('useDebugParams not set, skipping');
       return config;
     }
 
     const cwd = config.cwd as string;
     if (!cwd) {
+      this.outputChannel.info('cwd not set, skipping');
       return config;
     }
 
@@ -122,8 +128,8 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     folder: vscode.WorkspaceFolder | undefined
   ): Promise<vscode.DebugConfiguration> {
     const result = { ...debugConfig };
-    console.log('[debug-params] Input debugConfig:', JSON.stringify(debugConfig, null, 2));
-    console.log('[debug-params] Selected paramConfig:', JSON.stringify(paramConfig, null, 2));
+    this.outputChannel.info('Input debugConfig:', JSON.stringify(debugConfig, null, 2));
+    this.outputChannel.info('Selected paramConfig:', JSON.stringify(paramConfig, null, 2));
 
     const inputValues = await this.collectInputs(paramConfig, folder, debugConfig);
 
@@ -147,6 +153,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       } else {
         result.env = { ...(result.env || {}), ...expandedEnv };
       }
+      this.outputChannel.info('env set to:', JSON.stringify(result.environment || result.env));
     }
 
     if (paramConfig.args !== undefined) {
@@ -166,10 +173,10 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
         }
       }
       result.args = args;
-      console.log('[debug-params] args set to:', JSON.stringify(args));
+      this.outputChannel.info('args set to:', JSON.stringify(args));
     }
 
-    console.log('[debug-params] Final config:', JSON.stringify(result, null, 2));
+    this.outputChannel.info('Final config:', JSON.stringify(result, null, 2));
     return result;
   }
 
