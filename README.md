@@ -10,15 +10,282 @@ A VS Code extension for flexible management of environment variables and argumen
 - **Dynamic Input**: Specify parameters via file picker or text input at debug time
 - **Variable Expansion**: Support for `${workspaceFolder}`, `${fileDirname}`, `${env:VAR}`, etc.
 
-## Quick Start
+## Usage
 
-1. Add `useDebugParams: true` to your launch.json configuration
-2. Create `.debug-params.json` in your project folder
-3. Press F5 to debug - select from multiple configurations via quick pick
+### 1. Add `useDebugParams: true` to launch.json
 
-## Documentation
+```json
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${fileDirname}",
+      "useDebugParams": true
+    }
+  ]
+}
+```
 
-📖 **Detailed documentation in Japanese is available below.**
+### 2. Create `.debug-params.json` in your project folder
+
+```json
+{
+  "configs": [
+    {
+      "name": "Development",
+      "env": {
+        "DEBUG": "true",
+        "LOG_LEVEL": "DEBUG"
+      },
+      "args": ["--verbose"]
+    },
+    {
+      "name": "Production Simulation",
+      "env": {
+        "DEBUG": "false",
+        "LOG_LEVEL": "ERROR"
+      },
+      "args": []
+    }
+  ]
+}
+```
+
+### 3. Press F5 to debug
+
+When multiple configurations exist, you can select from a quick pick menu.
+
+## Configuration Options
+
+### .debug-params.json
+
+| Field | Description | Required |
+|-------|-------------|----------|
+| `name` | Configuration name (displayed in selection) | ✓ |
+| `platform` | Target platform (`"windows"`, `"linux"`, `"macos"` or array) | |
+| `type` | Debug type (`debugpy`, `cppdbg`, etc.) | |
+| `env` | Environment variables object | |
+| `args` | Arguments array or string | |
+| `inputs` | Dynamic input definitions | |
+
+### Common Debug Types
+
+- `cppdbg` - C/C++ (GDB/LLDB) - Linux, macOS
+- `cppvsdbg` - C/C++ (Visual Studio debugger) - Windows
+- `debugpy` - Python
+- `coreclr` - .NET
+- `node` - Node.js
+
+## Parameter Merge Rules
+
+### Environment Variables
+
+Environment variables from `.debug-params.json` are merged into launch.json's environment variables. Duplicate keys are overwritten.
+
+### Arguments
+
+When `args` key exists in `.debug-params.json`, it **replaces** launch.json's arguments. If `args` key is absent, launch.json's arguments are preserved. Use empty array `[]` to clear arguments.
+
+## Platform-Specific Settings
+
+```json
+{
+  "configs": [
+    {
+      "name": "Development",
+      "platform": "windows",
+      "env": {
+        "PATH": "${workspaceFolder}\\bin;${env:PATH}"
+      }
+    },
+    {
+      "name": "Development",
+      "platform": ["linux", "macos"],
+      "env": {
+        "LD_LIBRARY_PATH": "${workspaceFolder}/lib:${env:LD_LIBRARY_PATH}"
+      }
+    }
+  ]
+}
+```
+
+## Dynamic Input
+
+Accept user input at debug time.
+
+### Built-in Input
+
+```json
+{
+  "configs": [
+    {
+      "name": "File Processing",
+      "args": [
+        "--input=${input:@file:Select input file}",
+        "--port=${input:@text:Port number:8080}"
+      ]
+    }
+  ]
+}
+```
+
+#### Available Built-in Inputs
+
+- `${input:@file}` - File selection
+- `${input:@folder}` - Folder selection
+- `${input:@text}` - Text input
+- `${input:@password}` - Password input
+- `${input:@args}` - Enter entire arguments
+
+Format: `${input:@type:description:default}`
+
+### Custom Input
+
+```json
+{
+  "configs": [
+    {
+      "name": "Custom Settings",
+      "args": ["--format=${input:format}"],
+      "inputs": [
+        {
+          "id": "format",
+          "type": "pickString",
+          "description": "Output format",
+          "options": ["json", "xml", "csv"],
+          "default": "json"
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Input Types
+
+- `promptString` - Text input
+- `pickString` - Select from options
+- `pickFile` - File selection dialog
+- `pickFolder` - Folder selection dialog
+
+#### Input Options
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique identifier (required) |
+| `type` | Input type (required) |
+| `description` | Prompt message (required) |
+| `default` | Default value (supports variable expansion) |
+| `options` | Options array (for `pickString`) |
+| `password` | Password mode (for `promptString`) |
+
+#### Input Value Caching
+
+When running the same configuration consecutively, previous input values are automatically used as defaults.
+
+#### Input Cancellation
+
+If the user cancels an input, the debug session is aborted.
+
+## Supported Variables
+
+- `${workspaceFolder}` - Workspace root path
+- `${workspaceRoot}` - Same as `${workspaceFolder}` (for compatibility)
+- `${fileDirname}` - Current file's directory
+- `${file}` - Current file's absolute path
+- `${fileBasename}` - Current file name
+- `${fileBasenameNoExtension}` - File name without extension
+- `${fileExtname}` - File extension
+- `${cwd}` - cwd specified in launch.json
+- `${env:VAR}` - Environment variable value
+- `${config:KEY}` - VS Code configuration value
+
+## Examples
+
+### Python Project
+
+```json
+{
+  "configs": [
+    {
+      "name": "Development",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/lib",
+        "DEBUG": "true"
+      },
+      "args": ["--verbose"]
+    },
+    {
+      "name": "pytest",
+      "args": "${input:@args:Test path:tests/ -v}"
+    }
+  ]
+}
+```
+
+### C/C++ Project
+
+```json
+{
+  "configs": [
+    {
+      "name": "Debug Build",
+      "platform": "linux",
+      "env": {
+        "LD_LIBRARY_PATH": "${workspaceFolder}/lib"
+      },
+      "args": [
+        "--input=${input:@file:Input file}",
+        "--verbose"
+      ]
+    }
+  ]
+}
+```
+
+### .NET Project
+
+```json
+{
+  "configs": [
+    {
+      "name": "Development",
+      "env": {
+        "DOTNET_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:${input:@text:Port:5000}"
+      }
+    }
+  ]
+}
+```
+
+## Build Error Handling
+
+When `preLaunchTask` fails (e.g., build error) and the `program` file doesn't exist, the extension cancels the debug session and displays a warning message.
+
+This prevents unnecessary configuration selection dialogs when build errors occur.
+
+## Troubleshooting
+
+To verify settings are applied correctly, check the output panel for logs.
+
+1. In VS Code, select "View" → "Output" (or `Ctrl+Shift+U`)
+2. Select "Debug Params" from the dropdown
+3. Check the `Final config` log for the final configuration
+
+You can verify variable expansion results and whether environment variables and arguments are set as expected.
+
+## Compatibility
+
+This extension works safely even when not installed. The `useDebugParams` flag is ignored, and launch.json settings are used as-is.
+
+## License
+
+MIT
 
 ---
 
