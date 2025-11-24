@@ -67,10 +67,28 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 |------|------|------|
 | `name` | 設定の名前 (選択時に表示) | ✓ |
 | `platform` | 対象プラットフォーム (`"windows"`, `"linux"`, `"macos"` または配列) | |
-| `type` | デバッグタイプ (`"debugpy"`, `"cppdbg"` など) | |
+| `type` | デバッグタイプ (`debugpy`, `cppdbg` など) | |
 | `env` | 環境変数のオブジェクト | |
 | `args` | 引数の配列または文字列 | |
 | `inputs` | 動的入力の定義 | |
+
+### 主なデバッグタイプ
+
+- `cppdbg` - C/C++ (GDB/LLDB) - Linux, macOS
+- `cppvsdbg` - C/C++ (Visual Studio debugger) - Windows
+- `debugpy` - Python
+- `coreclr` - .NET
+- `node` - Node.js
+
+## パラメータのマージルール
+
+### 環境変数
+
+launch.json の環境変数に、`.debug-params.json` の環境変数をマージします。同じキーがある場合は上書きします。
+
+### 引数
+
+`.debug-params.json` に `args` キーがある場合、launch.json の引数を**置換**します。`args` キーがない場合は、launch.json の引数を維持します。空配列 `[]` を指定すると引数を空にできます。
 
 ## プラットフォーム別設定
 
@@ -154,9 +172,29 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 - `pickFile` - ファイル選択ダイアログ
 - `pickFolder` - フォルダ選択ダイアログ
 
+#### input のオプション
+
+| 項目 | 説明 |
+|------|------|
+| `id` | 一意の識別子 (必須) |
+| `type` | 入力タイプ (必須) |
+| `description` | ユーザーへの説明文 (必須) |
+| `default` | デフォルト値 (変数展開可能) |
+| `options` | 選択肢の配列 (`pickString` の場合に使用) |
+| `password` | パスワード入力モード (`promptString` の場合に使用) |
+
+#### 入力値のキャッシュ
+
+同じ設定を連続して実行する場合、前回の入力値が自動的にデフォルト値として使用されます。
+
+#### 入力のキャンセル
+
+ユーザーが入力をキャンセルした場合、デバッグ実行は中止されます。
+
 ## サポートする変数
 
 - `${workspaceFolder}` - ワークスペースのルートパス
+- `${workspaceRoot}` - `${workspaceFolder}` と同じ (互換性のため)
 - `${fileDirname}` - カレントファイルのディレクトリ
 - `${file}` - カレントファイルの絶対パス
 - `${fileBasename}` - カレントファイル名
