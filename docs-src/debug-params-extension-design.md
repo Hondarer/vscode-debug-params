@@ -1994,3 +1994,35 @@ launch.json では、デバッグタイプによって環境変数の形式が�
 - `pickString` の場合、`options` が定義されていること
 
 不正な設定はスキップし、警告を表示します。
+
+### ログ出力
+
+デバッグ時のトラブルシューティングのため、拡張機能は「出力」パネルの「Debug Params」チャンネルにログを出力します。
+
+#### ログの確認方法
+
+1. VS Code で「表示」→「出力」を選択 (または `Ctrl+Shift+U`)
+2. 出力パネルのドロップダウンから「Debug Params」を選択
+
+#### 出力されるログ
+
+| タイミング | メッセージ | 説明 |
+|------------|------------|------|
+| 処理開始 | `resolveDebugConfigurationWithSubstitutedVariables called` | デバッグ設定の解決処理が開始 |
+| スキップ時 | `useDebugParams not set, skipping` | `useDebugParams` フラグが設定されていない |
+| スキップ時 | `cwd not set, skipping` | `cwd` が設定されていない |
+| 設定読み込み後 | `Input debugConfig: {...}` | launch.json から読み込んだデバッグ設定 (JSON) |
+| 設定選択後 | `Selected paramConfig: {...}` | ユーザーが選択した .debug-params.json の設定 (JSON) |
+| 環境変数設定後 | `env set to: {...}` | マージ後の環境変数 |
+| 引数設定後 | `args set to: [...]` | 展開後の引数配列 |
+| 処理完了 | `Final config: {...}` | 最終的なデバッグ設定 (JSON) |
+
+#### 使用例
+
+設定が正しく適用されているか確認したい場合:
+
+1. F5 でデバッグ実行
+2. 出力パネルで「Debug Params」を確認
+3. `Final config` のログで最終的な設定を確認
+
+変数が正しく展開されているか、環境変数や引数が期待通りに設定されているかを確認できます。
