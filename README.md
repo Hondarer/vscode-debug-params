@@ -1,5 +1,29 @@
 # vscode-debug-params
 
+A VS Code extension for flexible management of environment variables and arguments during debug sessions.
+
+## Features
+
+- **Configuration Separation**: Keep launch.json simple by separating project-specific settings into `.debug-params.json`
+- **Multiple Configuration Sets**: Easily switch between development, test, and production simulation environments
+- **Cross-Platform Support**: Manage different settings for Windows/Linux/macOS
+- **Dynamic Input**: Specify parameters via file picker or text input at debug time
+- **Variable Expansion**: Support for `${workspaceFolder}`, `${fileDirname}`, `${env:VAR}`, etc.
+
+## Quick Start
+
+1. Add `useDebugParams: true` to your launch.json configuration
+2. Create `.debug-params.json` in your project folder
+3. Press F5 to debug - select from multiple configurations via quick pick
+
+## Documentation
+
+📖 **Detailed documentation in Japanese is available below.**
+
+---
+
+# 日本語ドキュメント
+
 VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する拡張機能です。
 
 ## 特徴
