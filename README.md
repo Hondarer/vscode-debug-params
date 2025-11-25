@@ -40,6 +40,25 @@ A VS Code extension for flexible management of environment variables and argumen
 {
   "configs": [
     {
+      "name": "Enter arguments",
+      "args": "${input:@args}"
+    }
+  ]
+}
+```
+
+#### 3. Press F5 to debug
+
+When you start debugging, you can enter any arguments using an input box.
+
+#### 4. Advanced usage
+
+When multiple configurations exist, you can select from a quick pick menu.
+
+```json
+{
+  "configs": [
+    {
       "name": "Development",
       "env": {
         "DEBUG": "true",
@@ -58,10 +77,6 @@ A VS Code extension for flexible management of environment variables and argumen
   ]
 }
 ```
-
-#### 3. Press F5 to debug
-
-When multiple configurations exist, you can select from a quick pick menu.
 
 ### Configuration Options
 
@@ -331,6 +346,25 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 {
   "configs": [
     {
+      "name": "引数任意入力",
+      "args": "${input:@args}"
+    }
+  ]
+}
+```
+
+#### 3. F5 でデバッグ実行
+
+デバッグ実行を開始する際、引数を入力する入力ボックスを使って引数を任意に設定できます。
+
+#### 4. 応用
+
+複数の設定がある場合、クイックピックで選択できます。
+
+```json
+{
+  "configs": [
+    {
       "name": "開発環境",
       "env": {
         "DEBUG": "true",
@@ -349,10 +383,6 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
   ]
 }
 ```
-
-#### 3. F5 でデバッグ実行
-
-複数の設定がある場合、クイックピックで選択できます。
 
 ### 設定項目
 
