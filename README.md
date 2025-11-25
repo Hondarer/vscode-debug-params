@@ -34,7 +34,9 @@ A VS Code extension for flexible management of environment variables and argumen
 }
 ```
 
-#### 2. Create `.debug-params.json` in your project folder
+#### 2. Create `.debug-params.json` in the cwd specified in launch.json
+
+For the example launch.json above, you would create `.debug-params.json` in the same directory as the Python file you want to debug.
 
 ```json
 {
@@ -49,7 +51,8 @@ A VS Code extension for flexible management of environment variables and argumen
 
 #### 3. Press F5 to debug
 
-When you start debugging, you can enter any arguments using an input box.
+When you start debugging, you can enter any arguments using an input box.  
+That's all! Enjoy!
 
 #### 4. Advanced usage
 
@@ -340,7 +343,9 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 }
 ```
 
-#### 2. プロジェクトフォルダに `.debug-params.json` を作成
+#### 2. launch.json に指定されている cwd に `.debug-params.json` を作成
+
+上記の launch.json に対応する例としては、デバッグしたい Python ファイルと同じディレクトリに `.debug-params.json` を作成しておきます。
 
 ```json
 {
@@ -355,7 +360,8 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 
 #### 3. F5 でデバッグ実行
 
-デバッグ実行を開始する際、引数を入力する入力ボックスを使って引数を任意に設定できます。
+デバッグ実行を開始する際、引数を入力する入力ボックスを使って引数を任意に設定できます。  
+たっだこれだけです。シンプル！
 
 #### 4. 応用
 

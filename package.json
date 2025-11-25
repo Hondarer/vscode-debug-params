@@ -4,7 +4,7 @@
   "description": "Manage debug parameters with .debug-params.json for flexible environment and argument configuration",
   "author": "Tetsuo Honda",
   "publisher": "TetsuoHonda",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/Hondarer/vscode-debug-params.git"
