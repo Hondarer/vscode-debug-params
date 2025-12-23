@@ -387,7 +387,7 @@ print-target:
 
 - **Timeout**: Commands must complete within 10 seconds
 - **Output**: Automatically trimmed (whitespace and newlines removed). If output contains multiple lines, only the first line is used.
-- **Error Handling**: On failure, empty string is returned with a warning message
+- **Error Handling**: On failure (non-zero exit code or timeout), the debug session is cancelled and a warning message is displayed
 - **Output Limit**: Maximum 1MB of output
 - **Shell**: Uses system default shell (`SHELL` env var on Linux/macOS, `COMSPEC` on Windows)
 - **Security**: Commands are executed as-is; ensure .debug-params.json is trusted
@@ -875,7 +875,7 @@ print-target:
 
 - **タイムアウト**: コマンドは10秒以内に完了する必要があります
 - **出力**: 自動的にトリム (前後の空白と改行を除去)。複数行の出力の場合、最初の行のみが使用されます。
-- **エラーハンドリング**: 失敗時は空文字列が返され、警告メッセージが表示されます
+- **エラーハンドリング**: 失敗時 (0以外の終了コードまたはタイムアウト) はデバッグセッションがキャンセルされ、警告メッセージが表示されます
 - **出力制限**: 最大1MBの出力
 - **シェル**: システムのデフォルトシェルを使用 (Linux/macOS では `SHELL` 環境変数、Windows では `COMSPEC`)
 - **セキュリティ**: コマンドはそのまま実行されます。.debug-params.jsonが信頼できることを確認してください

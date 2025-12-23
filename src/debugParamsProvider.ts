@@ -96,7 +96,9 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       if (error instanceof Error && error.message === 'Input cancelled') {
         return undefined;
       }
-      throw error;
+      // Shell command errors and other errors should also cancel debug
+      this.outputChannel.error('Debug cancelled due to error:', error instanceof Error ? error.message : String(error));
+      return undefined;
     }
   }
 
@@ -449,9 +451,9 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.outputChannel.error(`Shell command failed: ${command}`, errorMessage);
       vscode.window.showWarningMessage(
-        `Shell command failed: ${command}\nError: ${errorMessage}`
+        `Debug cancelled: Shell command failed: ${command}\nError: ${errorMessage}`
       );
-      return ''; // Return empty string on error
+      throw error; // Re-throw error to abort debug process
     }
   }
 
