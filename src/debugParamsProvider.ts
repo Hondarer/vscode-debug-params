@@ -2,7 +2,8 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as jsonc from 'jsonc-parser';
-import { DebugParamsConfig, DebugParamEntry, InputDefinition, InputCache } from './types';
+import { execSync } from 'child_process';
+import { DebugParamsConfig, DebugParamDefaults, DebugParamEntry, InputDefinition, InputCache } from './types';
 
 export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
   private inputCache: InputCache = {};
@@ -63,7 +64,10 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       return config;
     }
 
-    const filteredConfigs = this.filterConfigs(paramsConfig.configs, config.type);
+    // Merge defaults into each config entry
+    const configsWithDefaults = this.mergeDefaultsToConfigs(paramsConfig.configs, paramsConfig.defaults);
+
+    const filteredConfigs = this.filterConfigs(configsWithDefaults, config.type);
     if (filteredConfigs.length === 0) {
       vscode.window.showInformationMessage('No matching configurations found in .debug-params.json');
       return config;
@@ -174,6 +178,22 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       }
       result.args = args;
       this.outputChannel.info('args set to:', JSON.stringify(args));
+    }
+
+    // Program path override
+    if (paramConfig.program !== undefined) {
+      if (paramConfig.program.trim() === '') {
+        this.outputChannel.warn('program field is empty in .debug-params.json, keeping original program');
+      } else {
+        const expandedProgram = this.expandVariables(
+          paramConfig.program,
+          folder,
+          debugConfig,
+          inputValues
+        );
+        result.program = expandedProgram;
+        this.outputChannel.info(`program overridden to: ${expandedProgram}`);
+      }
     }
 
     this.outputChannel.info('Final config:', JSON.stringify(result, null, 2));
@@ -356,7 +376,100 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     }
   }
 
+  private mergeDefaultsToConfigs(
+    configs: DebugParamEntry[],
+    defaults?: DebugParamDefaults
+  ): DebugParamEntry[] {
+    if (!defaults) {
+      return configs;
+    }
+
+    return configs.map(config => {
+      const merged: DebugParamEntry = { ...config };
+
+      // Merge env: defaults env + config env (config takes precedence)
+      if (defaults.env || config.env) {
+        merged.env = { ...(defaults.env || {}), ...(config.env || {}) };
+      }
+
+      // Merge program: config takes precedence, fallback to defaults
+      if (!config.program && defaults.program) {
+        merged.program = defaults.program;
+      }
+
+      // Merge inputs: defaults inputs + config inputs (config takes precedence by ID)
+      if (defaults.inputs || config.inputs) {
+        const defaultInputs = defaults.inputs || [];
+        const configInputs = config.inputs || [];
+        const configInputIds = new Set(configInputs.map(i => i.id));
+
+        // Start with config inputs, then add defaults that don't conflict
+        merged.inputs = [
+          ...configInputs,
+          ...defaultInputs.filter(di => !configInputIds.has(di.id))
+        ];
+      }
+
+      return merged;
+    });
+  }
+
+  private executeShellCommand(command: string): string {
+    const platform = this.getCurrentPlatform();
+
+    try {
+      this.outputChannel.info(`Executing shell command: ${command}`);
+
+      // Determine shell based on platform
+      let shell: string;
+      if (platform === 'windows') {
+        shell = process.env.COMSPEC || 'cmd.exe';
+      } else {
+        shell = process.env.SHELL || '/bin/sh';
+      }
+
+      const result = execSync(command, {
+        encoding: 'utf-8',
+        shell: shell,
+        timeout: 10000, // 10 second timeout
+        maxBuffer: 1024 * 1024, // 1MB max output
+        windowsHide: true
+      });
+
+      // Trim whitespace and newlines, take first line only
+      const trimmedResult = result.toString().trim();
+      const firstLine = trimmedResult.split('\n')[0] || '';
+      this.outputChannel.info(`Command result: ${firstLine}`);
+
+      return firstLine;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.outputChannel.error(`Shell command failed: ${command}`, errorMessage);
+      vscode.window.showWarningMessage(
+        `Shell command failed: ${command}\nError: ${errorMessage}`
+      );
+      return ''; // Return empty string on error
+    }
+  }
+
   private expandVariables(
+    value: string,
+    folder: vscode.WorkspaceFolder | undefined,
+    debugConfig: vscode.DebugConfiguration,
+    inputValues: Record<string, string>
+  ): string {
+    let result = value;
+
+    // First pass: Expand all non-shell variables
+    result = this.expandNonShellVariables(result, folder, debugConfig, inputValues);
+
+    // Second pass: Expand shell commands (which can now use expanded variables)
+    result = this.expandShellCommands(result);
+
+    return result;
+  }
+
+  private expandNonShellVariables(
     value: string,
     folder: vscode.WorkspaceFolder | undefined,
     debugConfig: vscode.DebugConfiguration,
@@ -405,6 +518,31 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       const config = vscode.workspace.getConfiguration();
       return config.get(key, '');
     });
+
+    return result;
+  }
+
+  private expandShellCommands(value: string): string {
+    let result = value;
+    const shellVarPattern = /\$\{shell:([^}]+)\}/;
+    const maxExpansions = 10; // Prevent infinite loops
+    let expansionCount = 0;
+
+    while (shellVarPattern.test(result) && expansionCount < maxExpansions) {
+      const previousResult = result;
+      result = result.replace(/\$\{shell:([^}]+)\}/g, (match, command) => {
+        return this.executeShellCommand(command);
+      });
+
+      if (result === previousResult) {
+        break;
+      }
+      expansionCount++;
+    }
+
+    if (expansionCount >= maxExpansions) {
+      this.outputChannel.warn('Maximum shell variable expansions reached, possible circular reference');
+    }
 
     return result;
   }

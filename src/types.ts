@@ -1,5 +1,12 @@
 export interface DebugParamsConfig {
+  defaults?: DebugParamDefaults;
   configs: DebugParamEntry[];
+}
+
+export interface DebugParamDefaults {
+  env?: Record<string, string>;
+  program?: string;
+  inputs?: InputDefinition[];
 }
 
 export interface DebugParamEntry {
@@ -8,6 +15,7 @@ export interface DebugParamEntry {
   type?: string;
   env?: Record<string, string>;
   args?: string[] | string;
+  program?: string;
   inputs?: InputDefinition[];
 }
 

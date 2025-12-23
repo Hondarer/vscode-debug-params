@@ -83,7 +83,32 @@ When multiple configurations exist, you can select from a quick pick menu.
 
 ### Configuration Options
 
-#### .debug-params.json
+#### .debug-params.json Structure
+
+The `.debug-params.json` file has the following structure:
+
+```json
+{
+  "defaults": {
+    "env": { "COMMON_VAR": "value" },
+    "program": "/default/path",
+    "inputs": [...]
+  },
+  "configs": [
+    {
+      "name": "Config 1",
+      "env": { "SPECIFIC_VAR": "value" },
+      ...
+    }
+  ]
+}
+```
+
+**Top-level fields:**
+- `defaults` (optional): Default values applied to all configurations
+- `configs` (required): Array of configuration entries
+
+#### Configuration Entry Fields
 
 | Field | Description | Required |
 |-------|-------------|----------|
@@ -92,6 +117,7 @@ When multiple configurations exist, you can select from a quick pick menu.
 | `type` | Debug type (`debugpy`, `cppdbg`, etc.) | |
 | `env` | Environment variables object | |
 | `args` | Arguments array or string | |
+| `program` | Program path (overrides launch.json) | |
 | `inputs` | Dynamic input definitions | |
 
 #### Common Debug Types
@@ -104,6 +130,40 @@ When multiple configurations exist, you can select from a quick pick menu.
 
 ### Parameter Merge Rules
 
+#### Defaults
+
+The `defaults` field provides default values that are merged into all configuration entries before being applied to launch.json.
+
+**Merge order**: defaults → selected config entry → launch.json
+
+**Supported fields in defaults:**
+- `env`: Default environment variables (merged with config's env, config takes precedence)
+- `program`: Default program path (used if config doesn't specify program)
+- `inputs`: Default input definitions (merged with config's inputs, config takes precedence by ID)
+
+**Example:**
+```json
+{
+  "defaults": {
+    "env": {
+      "DEBUG": "true",
+      "LOG_LEVEL": "INFO"
+    },
+    "program": "${workspaceFolder}/bin/app"
+  },
+  "configs": [
+    {
+      "name": "Development",
+      "env": {
+        "LOG_LEVEL": "DEBUG"
+      }
+    }
+  ]
+}
+```
+
+Result: `LOG_LEVEL` will be `"DEBUG"` (config overrides defaults), `DEBUG` will be `"true"` (from defaults), and `program` will be `"${workspaceFolder}/bin/app"` (from defaults).
+
 #### Environment Variables
 
 Environment variables from `.debug-params.json` are merged into launch.json's environment variables. Duplicate keys are overwritten.
@@ -111,6 +171,12 @@ Environment variables from `.debug-params.json` are merged into launch.json's en
 #### Arguments
 
 When `args` key exists in `.debug-params.json`, it **replaces** launch.json's arguments. If `args` key is absent, launch.json's arguments are preserved. Use empty array `[]` to clear arguments.
+
+#### Program Path
+
+When `program` key exists in `.debug-params.json`, it **replaces** launch.json's program path. If `program` key is absent, launch.json's program is preserved. Empty string values are ignored and the original program is maintained.
+
+The program path supports variable expansion including `${shell:}` for dynamic command execution.
 
 ### Platform-Specific Settings
 
@@ -225,6 +291,112 @@ If the user cancels an input, the debug session is aborted.
 - `${cwd}` - cwd specified in launch.json
 - `${env:VAR}` - Environment variable value
 - `${config:KEY}` - VS Code configuration value
+- `${shell:command}` - Execute shell command and use stdout as value
+
+### Shell Commands
+
+Execute shell commands to dynamically determine configuration values at debug time.
+
+#### Syntax
+
+`${shell:command}` - Execute command and use its stdout output (trimmed)
+
+#### Examples
+
+**Dynamic program path from build system:**
+```json
+{
+  "configs": [
+    {
+      "name": "Build Output",
+      "platform": "linux",
+      "program": "${shell:make print-target}"
+    }
+  ]
+}
+```
+
+Makefile example:
+```makefile
+BIN := ./bin/myapp
+
+print-target:
+	@echo $(realpath $(BIN))
+```
+
+**Platform-specific commands:**
+```json
+{
+  "configs": [
+    {
+      "name": "Build Output",
+      "platform": "linux",
+      "program": "${shell:./scripts/get-path.sh}"
+    },
+    {
+      "name": "Build Output",
+      "platform": "windows",
+      "program": "${shell:scripts\\get-path.bat}"
+    }
+  ]
+}
+```
+
+**Using variables within shell commands:**
+```json
+{
+  "configs": [
+    {
+      "name": "Workspace Build",
+      "program": "${shell:echo ${workspaceFolder}/bin/app}"
+    }
+  ]
+}
+```
+
+**In environment variables:**
+```json
+{
+  "configs": [
+    {
+      "name": "Dynamic Environment",
+      "env": {
+        "BUILD_DIR": "${shell:pwd}",
+        "GIT_COMMIT": "${shell:git rev-parse HEAD}"
+      }
+    }
+  ]
+}
+```
+
+**In arguments:**
+```json
+{
+  "configs": [
+    {
+      "name": "Config Path",
+      "args": [
+        "--config=${shell:find . -name config.json | head -1}"
+      ]
+    }
+  ]
+}
+```
+
+#### Command Execution Details
+
+- **Timeout**: Commands must complete within 10 seconds
+- **Output**: Automatically trimmed (whitespace and newlines removed). If output contains multiple lines, only the first line is used.
+- **Error Handling**: On failure, empty string is returned with a warning message
+- **Output Limit**: Maximum 1MB of output
+- **Shell**: Uses system default shell (`SHELL` env var on Linux/macOS, `COMSPEC` on Windows)
+- **Security**: Commands are executed as-is; ensure .debug-params.json is trusted
+
+#### Limitations
+
+- Shell commands containing `}` character may require workarounds (use script files)
+- Commands are executed synchronously during debug session startup
+- No interactive commands (stdin is not available)
 
 ### Examples
 
@@ -300,6 +472,13 @@ To verify settings are applied correctly, check the output panel for logs.
 3. Check the `Final config` log for the final configuration
 
 You can verify variable expansion results and whether environment variables and arguments are set as expected.
+
+**Shell command fails:**
+- Check command syntax for your platform
+- Ensure command is in PATH or use absolute path
+- Commands must complete within 10 seconds
+- Check "Debug Params" output panel for detailed error messages
+- Test commands manually in terminal first
 
 ### Compatibility
 
@@ -392,7 +571,32 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 
 ### 設定項目
 
-#### .debug-params.json
+#### .debug-params.json の構造
+
+`.debug-params.json` ファイルは以下の構造を持ちます：
+
+```json
+{
+  "defaults": {
+    "env": { "COMMON_VAR": "value" },
+    "program": "/default/path",
+    "inputs": [...]
+  },
+  "configs": [
+    {
+      "name": "設定1",
+      "env": { "SPECIFIC_VAR": "value" },
+      ...
+    }
+  ]
+}
+```
+
+**トップレベルのフィールド:**
+- `defaults` (オプション): すべての設定に適用されるデフォルト値
+- `configs` (必須): 設定エントリの配列
+
+#### 設定エントリのフィールド
 
 | 項目 | 説明 | 必須 |
 |------|------|------|
@@ -401,6 +605,7 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 | `type` | デバッグタイプ (`debugpy`, `cppdbg` など) | |
 | `env` | 環境変数のオブジェクト | |
 | `args` | 引数の配列または文字列 | |
+| `program` | プログラムパス (launch.json を上書き) | |
 | `inputs` | 動的入力の定義 | |
 
 #### 主なデバッグタイプ
@@ -413,13 +618,53 @@ VS Code でデバッグ実行時の環境変数と引数を柔軟に管理する
 
 ### パラメータのマージルール
 
+#### デフォルト値 (defaults)
+
+`defaults` フィールドは、すべての設定エントリにマージされるデフォルト値を提供します。launch.json に適用される前にマージされます。
+
+**マージ順序**: defaults → 選択された設定エントリ → launch.json
+
+**defaults でサポートされるフィールド:**
+- `env`: デフォルトの環境変数 (設定の env とマージ、設定が優先)
+- `program`: デフォルトのプログラムパス (設定で program が指定されていない場合に使用)
+- `inputs`: デフォルトの入力定義 (設定の inputs とマージ、ID が同じ場合は設定が優先)
+
+**例:**
+```json
+{
+  "defaults": {
+    "env": {
+      "DEBUG": "true",
+      "LOG_LEVEL": "INFO"
+    },
+    "program": "${workspaceFolder}/bin/app"
+  },
+  "configs": [
+    {
+      "name": "開発環境",
+      "env": {
+        "LOG_LEVEL": "DEBUG"
+      }
+    }
+  ]
+}
+```
+
+結果: `LOG_LEVEL` は `"DEBUG"` (設定が defaults を上書き)、`DEBUG` は `"true"` (defaults から)、`program` は `"${workspaceFolder}/bin/app"` (defaults から) になります。
+
 #### 環境変数
 
 launch.json の環境変数に、`.debug-params.json` の環境変数をマージします。同じキーがある場合は上書きします。
 
 #### 引数
 
-`.debug-params.json` に `args` キーがある場合、launch.json の引数を**置換**します。`args` キーがない場合は、launch.json の引数を維持します。空配列 `[]` を指定すると引数を空にできます。
+`.debug-params.json` に `args` キーがある場合、launch.json の引数を置換します。`args` キーがない場合は、launch.json の引数を維持します。空配列 `[]` を指定すると引数を空にできます。
+
+#### プログラムパス
+
+`.debug-params.json` に `program` キーがある場合、launch.json のプログラムパスを置換します。`program` キーがない場合は、launch.json のプログラムを維持します。空文字列の場合は無視され、元のプログラムが維持されます。
+
+プログラムパスは `${shell:}` を含む変数展開をサポートしています。
 
 ### プラットフォーム別設定
 
@@ -534,6 +779,112 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 - `${cwd}` - launch.json で指定された cwd
 - `${env:VAR}` - 環境変数の値
 - `${config:KEY}` - VS Code の設定値
+- `${shell:コマンド}` - シェルコマンドを実行し、標準出力を値として使用
+
+### シェルコマンド
+
+デバッグ実行時にシェルコマンドを実行して、設定値を動的に決定できます。
+
+#### 構文
+
+`${shell:コマンド}` - コマンドを実行し、標準出力 (トリム後) を値として使用
+
+#### 例
+
+**ビルドシステムからプログラムパスを動的に取得:**
+```json
+{
+  "configs": [
+    {
+      "name": "ビルド出力",
+      "platform": "linux",
+      "program": "${shell:make print-target}"
+    }
+  ]
+}
+```
+
+Makefile の例:
+```makefile
+BIN := ./bin/myapp
+
+print-target:
+	@echo $(realpath $(BIN))
+```
+
+**プラットフォーム別のコマンド:**
+```json
+{
+  "configs": [
+    {
+      "name": "ビルド出力",
+      "platform": "linux",
+      "program": "${shell:./scripts/get-path.sh}"
+    },
+    {
+      "name": "ビルド出力",
+      "platform": "windows",
+      "program": "${shell:scripts\\get-path.bat}"
+    }
+  ]
+}
+```
+
+**シェルコマンド内で変数を使用:**
+```json
+{
+  "configs": [
+    {
+      "name": "ワークスペースビルド",
+      "program": "${shell:echo ${workspaceFolder}/bin/app}"
+    }
+  ]
+}
+```
+
+**環境変数内での使用:**
+```json
+{
+  "configs": [
+    {
+      "name": "動的環境変数",
+      "env": {
+        "BUILD_DIR": "${shell:pwd}",
+        "GIT_COMMIT": "${shell:git rev-parse HEAD}"
+      }
+    }
+  ]
+}
+```
+
+**引数内での使用:**
+```json
+{
+  "configs": [
+    {
+      "name": "設定パス",
+      "args": [
+        "--config=${shell:find . -name config.json | head -1}"
+      ]
+    }
+  ]
+}
+```
+
+#### コマンド実行の詳細
+
+- **タイムアウト**: コマンドは10秒以内に完了する必要があります
+- **出力**: 自動的にトリム (前後の空白と改行を除去)。複数行の出力の場合、最初の行のみが使用されます。
+- **エラーハンドリング**: 失敗時は空文字列が返され、警告メッセージが表示されます
+- **出力制限**: 最大1MBの出力
+- **シェル**: システムのデフォルトシェルを使用 (Linux/macOS では `SHELL` 環境変数、Windows では `COMSPEC`)
+- **セキュリティ**: コマンドはそのまま実行されます。.debug-params.jsonが信頼できることを確認してください
+
+#### 制限事項
+
+- `}` 文字を含むシェルコマンドは回避策が必要な場合があります (スクリプトファイルを使用)
+- コマンドはデバッグセッション開始時に同期実行されます
+- 対話的なコマンドは使用できません (標準入力は利用できません)
 
 ### サンプル
 
@@ -609,6 +960,13 @@ launch.json の環境変数に、`.debug-params.json` の環境変数をマー�
 3. `Final config` のログで最終的な設定を確認
 
 変数の展開結果や、環境変数・引数が期待通りに設定されているかを確認できます。
+
+**シェルコマンドが失敗する:**
+- プラットフォームに合わせたコマンド構文を確認
+- コマンドが PATH にあるか、または絶対パスを使用しているか確認
+- コマンドは 10 秒以内に完了する必要があります
+- 詳細なエラーメッセージは「Debug Params」出力パネルを確認
+- まずターミナルで手動でコマンドをテストしてください
 
 ### 互換性
 
