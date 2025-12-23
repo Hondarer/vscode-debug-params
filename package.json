@@ -5,7 +5,7 @@
   "icon": "icon.png",
   "author": "Tetsuo Honda",
   "publisher": "TetsuoHonda",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/Hondarer/vscode-debug-params.git"

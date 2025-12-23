@@ -33,12 +33,6 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       return config;
     }
 
-    // Check if program exists (e.g., build may have failed in preLaunchTask)
-    if (config.program && !fs.existsSync(config.program)) {
-      vscode.window.showWarningMessage(`Debug cancelled: program not found: ${config.program}`);
-      return undefined;
-    }
-
     const debugParamsPath = path.join(cwd, '.debug-params.json');
     if (!fs.existsSync(debugParamsPath)) {
       return config;
@@ -90,6 +84,13 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     try {
       const resolvedConfig = await this.applyConfig(config, selectedConfig, folder);
       delete resolvedConfig.useDebugParams;
+
+      // Check if program exists after override (e.g., build may have failed in preLaunchTask)
+      if (resolvedConfig.program && !fs.existsSync(resolvedConfig.program)) {
+        vscode.window.showWarningMessage(`Debug cancelled: program not found: ${resolvedConfig.program}`);
+        return undefined;
+      }
+
       return resolvedConfig;
     } catch (error) {
       if (error instanceof Error && error.message === 'Input cancelled') {
@@ -140,7 +141,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     if (paramConfig.env) {
       const expandedEnv: Record<string, string> = {};
       for (const [key, value] of Object.entries(paramConfig.env)) {
-        expandedEnv[key] = this.expandVariables(value, folder, debugConfig, inputValues);
+        expandedEnv[key] = this.expandVariables(value, folder, debugConfig, inputValues, debugConfig.cwd);
       }
 
       if (debugConfig.type === 'cppdbg' || debugConfig.type === 'cppvsdbg') {
@@ -163,12 +164,12 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     if (paramConfig.args !== undefined) {
       let args: string[];
       if (typeof paramConfig.args === 'string') {
-        const expanded = this.expandVariables(paramConfig.args, folder, debugConfig, inputValues);
+        const expanded = this.expandVariables(paramConfig.args, folder, debugConfig, inputValues, debugConfig.cwd);
         args = this.parseArgsString(expanded);
       } else {
         args = [];
         for (const arg of paramConfig.args) {
-          const expanded = this.expandVariables(arg, folder, debugConfig, inputValues);
+          const expanded = this.expandVariables(arg, folder, debugConfig, inputValues, debugConfig.cwd);
           if (this.isBuiltinArgsInput(arg)) {
             args.push(...this.parseArgsString(expanded));
           } else {
@@ -189,7 +190,8 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
           paramConfig.program,
           folder,
           debugConfig,
-          inputValues
+          inputValues,
+          debugConfig.cwd
         );
         result.program = expandedProgram;
         this.outputChannel.info(`program overridden to: ${expandedProgram}`);
@@ -230,7 +232,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     }
 
     for (const input of builtinInputs) {
-      const expandedDefault = this.expandVariables(input.defaultVal, folder, debugConfig, values);
+      const expandedDefault = this.expandVariables(input.defaultVal, folder, debugConfig, values, debugConfig.cwd);
       const cached = configCache[input.id];
       const value = await this.promptBuiltinInput(input.type, input.desc, cached || expandedDefault);
       if (value === undefined) {
@@ -247,7 +249,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
         }
 
         const expandedDefault = input.default
-          ? this.expandVariables(input.default, folder, debugConfig, values)
+          ? this.expandVariables(input.default, folder, debugConfig, values, debugConfig.cwd)
           : undefined;
         const cached = configCache[input.id];
         const value = await this.promptInput(input, cached || expandedDefault);
@@ -414,7 +416,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     });
   }
 
-  private executeShellCommand(command: string): string {
+  private executeShellCommand(command: string, cwd?: string): string {
     const platform = this.getCurrentPlatform();
 
     try {
@@ -431,6 +433,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
       const result = execSync(command, {
         encoding: 'utf-8',
         shell: shell,
+        cwd: cwd,
         timeout: 10000, // 10 second timeout
         maxBuffer: 1024 * 1024, // 1MB max output
         windowsHide: true
@@ -456,7 +459,8 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     value: string,
     folder: vscode.WorkspaceFolder | undefined,
     debugConfig: vscode.DebugConfiguration,
-    inputValues: Record<string, string>
+    inputValues: Record<string, string>,
+    cwd?: string
   ): string {
     let result = value;
 
@@ -464,7 +468,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     result = this.expandNonShellVariables(result, folder, debugConfig, inputValues);
 
     // Second pass: Expand shell commands (which can now use expanded variables)
-    result = this.expandShellCommands(result);
+    result = this.expandShellCommands(result, cwd);
 
     return result;
   }
@@ -522,7 +526,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     return result;
   }
 
-  private expandShellCommands(value: string): string {
+  private expandShellCommands(value: string, cwd?: string): string {
     let result = value;
     const shellVarPattern = /\$\{shell:([^}]+)\}/;
     const maxExpansions = 10; // Prevent infinite loops
@@ -531,7 +535,7 @@ export class DebugParamsProvider implements vscode.DebugConfigurationProvider {
     while (shellVarPattern.test(result) && expansionCount < maxExpansions) {
       const previousResult = result;
       result = result.replace(/\$\{shell:([^}]+)\}/g, (match, command) => {
-        return this.executeShellCommand(command);
+        return this.executeShellCommand(command, cwd);
       });
 
       if (result === previousResult) {
